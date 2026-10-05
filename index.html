@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>한일 달력</title>
+<meta name="theme-color" content="#eef0f4">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="한일 달력">
+<style>
+  :root{
+    --bg:#eef0f4;--surface:#ffffff;--ink:#20242e;--muted:#868d9c;--line:#e4e7ee;
+    --jp:#dd3d3d;--jp-soft:#fceaea;--jp-edge:#f3c4c4;
+    --vac:#c62f2f;--vac-soft:#f7cccc;--vac-edge:#eba3a3;
+    --kr:#bf7900;--kr-soft:#f6dfb0;--kr-edge:#e6c47f;--kr-ink:#8f5b00;
+    --sun:#df6a6a;--sat:#6b8fd6;--today:#20242e;--radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Pretendard','Pretendard Variable',-apple-system,BlinkMacSystemFont,
+    'Apple SD Gothic Neo','Noto Sans KR','Noto Sans JP','Segoe UI',sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;
+    padding:max(20px,env(safe-area-inset-top)) 14px max(48px,env(safe-area-inset-bottom))}
+  .wrap{max-width:760px;margin:0 auto}
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:nowrap}
+  .title{font-size:1.4rem;font-weight:800;letter-spacing:-.02em;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-width:0}
+  .title small{font-size:.8rem;font-weight:600;color:var(--muted);letter-spacing:0}
+  .topright{display:flex;align-items:center;gap:10px;flex:none}
+  .clock{font-weight:800;font-size:1.6rem;color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .clock .cd{color:var(--muted);font-weight:700;font-size:1rem;margin-right:8px}
+  .modebtn{border:1px solid var(--line);background:var(--surface);border-radius:999px;width:38px;height:38px;
+    cursor:pointer;font-size:1.05rem;color:var(--ink);display:flex;align-items:center;justify-content:center;flex:none;transition:background .15s}
+  .modebtn:hover{background:var(--bg)}
+  .sub{color:var(--muted);font-size:.85rem;margin-top:4px}
+  .bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .yearseg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px}
+  .yearseg button{border:none;background:transparent;font:inherit;font-weight:700;color:var(--muted);
+    padding:6px 14px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s}
+  .yearseg button.on{background:var(--ink);color:#fff}
+  .nav{display:flex;align-items:center;gap:6px;margin-left:auto;background:var(--surface);
+    border:1px solid var(--line);border-radius:999px;padding:3px;position:relative}
+  .nav button{width:34px;height:34px;border:none;background:transparent;border-radius:50%;font-size:1.1rem;
+    color:var(--ink);cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;transition:background .15s}
+  .nav button:hover{background:var(--bg)}
+  .nav .mlabel{min-width:112px;text-align:center;font-weight:800;font-size:.98rem;cursor:pointer;
+    user-select:none;border-radius:8px;padding:5px 4px;transition:background .15s}
+  .nav .mlabel:hover{background:var(--bg)}
+  .mpicker{position:absolute;top:46px;left:50%;transform:translateX(-50%);z-index:30;background:var(--surface);
+    border:1px solid var(--line);border-radius:12px;padding:8px;display:grid;grid-template-columns:repeat(3,1fr);
+    gap:6px;box-shadow:0 10px 28px rgba(0,0,0,.14);width:210px}
+  .mpicker[hidden]{display:none}
+  .mpicker button{width:auto;height:auto;border:1px solid var(--line);background:var(--surface);font:inherit;
+    font-weight:700;font-size:.85rem;padding:9px 0;border-radius:8px;cursor:pointer;color:var(--ink)}
+  .mpicker button:hover{background:var(--bg)}
+  .mpicker button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .todaybtn{border:1px solid var(--line);background:var(--surface);font:inherit;font-weight:700;color:var(--ink);
+    padding:8px 14px;border-radius:999px;cursor:pointer;font-size:.85rem}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin:16px 2px 14px;font-size:.82rem;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .chip{width:14px;height:14px;border-radius:5px;display:inline-block;flex:none}
+  .chip.jp{background:var(--jp)}.chip.kr{background:var(--kr)}.chip.vac{background:var(--vac)}
+  .chip.both{background:linear-gradient(135deg,var(--jp) 50%,var(--kr) 50%)}
+  .chip.td{background:#fff;border:2px solid var(--today)}
+  .cal{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px}
+  .dow{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:2px}
+  .dow div{text-align:center;font-size:.74rem;font-weight:700;color:var(--muted);padding:8px 0}
+  .dow div:first-child{color:var(--sun)}.dow div:last-child{color:var(--sat)}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .cell{min-height:74px;border-radius:10px;padding:7px 6px 5px;position:relative;display:flex;flex-direction:column;
+    gap:3px;background:var(--bg);cursor:pointer;transition:box-shadow .12s}
+  .cell:not(.blank):hover{box-shadow:inset 0 0 0 1px var(--muted)}
+  .cell.blank{background:transparent;cursor:default}
+  .cell.out{background:transparent;cursor:default}
+  .cell.out .n{color:#c3c8d1;font-weight:600}
+  .cell.out.sun .n{color:#ecc6c6}
+  .cell.out.sat .n{color:#c6d3ec}
+  .cell.out.o-jp{background:#fdf4f4;box-shadow:inset 0 0 0 1px #f7e0e0}.cell.out.o-jp .n{color:#eaa8a8}
+  .cell.out.o-kr{background:#fbf4e2;box-shadow:inset 0 0 0 1px #efe1bb}.cell.out.o-kr .n{color:#d9b968}
+  .cell.out.o-both{background:linear-gradient(135deg,#fdf4f4 55%,#fbf4e2 45%);box-shadow:inset 0 0 0 1px #f7e0e0}.cell.out.o-both .n{color:#ecab7c}
+  .cell.out.o-vac{background:#fdefef;box-shadow:inset 0 0 0 1px #f3d4d4}.cell.out.o-vac .n{color:#e39c9c}
+  .cell .n{font-size:.9rem;font-weight:700;line-height:1}
+  .cell.sun .n{color:var(--sun)}.cell.sat .n{color:var(--sat)}
+  .cell.jp{background:var(--jp-soft);box-shadow:inset 0 0 0 1px var(--jp-edge)}.cell.jp .n{color:#e06a6a}
+  .cell.kr{background:var(--kr-soft);box-shadow:inset 0 0 0 1px var(--kr-edge)}.cell.kr .n{color:#cf9500}
+  .cell.both{background:linear-gradient(135deg,var(--jp-soft) 55%,var(--kr-soft) 45%);box-shadow:inset 0 0 0 1px var(--jp-edge)}
+  .cell.both .n{color:#e0670c}
+  .cell.vac{background:var(--vac-soft);box-shadow:inset 0 0 0 1px var(--vac-edge)}.cell.vac .n{color:var(--vac)}
+  .cell.today{box-shadow:inset 0 0 0 3px #0c8377}
+  .todaydot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:#0c8377}
+  .cell .hname{font-size:.66rem;font-weight:600;line-height:1.25;overflow:hidden;text-overflow:ellipsis;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .cell .hname.jp{color:var(--jp)}.cell .hname.kr{color:var(--kr-ink)}.cell .hname.vac{color:var(--vac);font-weight:800}
+  .cell .bday{font-size:.66rem;font-weight:800;color:#c85fb0;line-height:1.2}
+  .todaydot{position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--today)}
+  .ytotal{margin:16px 2px 4px;font-size:.95rem;font-weight:800;background:var(--surface);
+    border:1px solid var(--line);border-radius:12px;padding:11px 15px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  .ytotal .yr{color:var(--muted);font-weight:700;font-size:.85rem}
+  .ytotal b.jp{color:var(--jp)}.ytotal b.vac{color:var(--vac)}
+  .summary{margin:10px 2px 6px;font-size:.9rem;font-weight:700}
+  .summary b.jp{color:var(--jp)}.summary b.vac{color:var(--vac)}
+  .list{list-style:none;display:flex;flex-direction:column;gap:1px;background:var(--surface);
+    border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .list li{display:flex;align-items:center;gap:11px;padding:11px 14px;border-top:1px solid var(--line)}
+  .list li:first-child{border-top:none}
+  .list li.vacrow{background:#fdf3f3}
+  .list .seq{width:22px;height:22px;border-radius:50%;background:var(--vac);color:#fff;font-size:.74rem;
+    font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+  .list .seqgap{width:22px;flex:none}
+  .list .date{font-weight:800;font-size:.9rem;width:52px;flex:none}
+  .list .date .wd{font-weight:600;color:var(--muted);font-size:.78rem;margin-left:3px}
+  .list .tag{font-size:.68rem;font-weight:800;padding:3px 8px;border-radius:999px;flex:none}
+  .list .tag.jp{background:var(--jp-soft);color:var(--jp)}.list .tag.kr{background:var(--kr-soft);color:var(--kr-ink)}
+  .list .tag.vac{background:var(--vac-soft);color:var(--vac)}.list .tag.bday{background:#fbe6f4;color:#c85fb0}
+  .list .nm{font-size:.9rem}.list .empty{padding:20px 14px;color:var(--muted);font-size:.88rem;text-align:center}
+  .divider{padding:7px 14px;font-size:.72rem;font-weight:700;color:var(--muted);background:#fafbfc;border-top:1px solid var(--line)}
+  .hint{margin:12px 4px 0;font-size:.78rem;color:var(--muted);line-height:1.6}
+  .note{margin:8px 4px 0;font-size:.76rem;color:#b97d0c;line-height:1.6}
+  @media(max-width:520px){
+    .topbar{flex-wrap:wrap}.clock{font-size:1.25rem}.clock .cd{font-size:.85rem}
+    .cell{min-height:60px;padding:5px 4px}.cell .hname{display:none}
+    .nav{margin-left:0;width:100%;justify-content:space-between}.nav .mlabel{flex:1}.todaybtn{margin-left:auto}
+  }
+  /* 다크 모드 */
+  body.dark{--bg:#13151a;--surface:#1d2027;--ink:#e7e9ef;--muted:#9198a6;--line:#2c313b;
+    --jp:#ff6d6d;--jp-soft:#3b2222;--jp-edge:#583131;--vac:#ff3b3b;--vac-soft:#611c1c;--vac-edge:#9c3232;
+    --kr:#e6b040;--kr-soft:#3a3218;--kr-edge:#574a26;--kr-ink:#e8c66a;
+    --sun:#ec8f8f;--sat:#8fb0ec;--today:#e7e9ef}
+  body.dark .yearseg button.on{color:#13151a}
+  body.dark .mpicker button.on{color:#13151a}
+  body.dark .cell.jp .n{color:#ff8a8a}
+  body.dark .cell.kr .n{color:#e8c46a}
+  body.dark .cell.both .n{color:#ff9d4d}
+  body.dark .cell.today{box-shadow:inset 0 0 0 3px #23c2af}
+  body.dark .cell.out .n{color:#495060}
+  body.dark .cell.out.sun .n{color:#6e4a4a}
+  body.dark .cell.out.sat .n{color:#4a566e}
+  body.dark .cell.out.o-jp{background:#2a1b1b;box-shadow:inset 0 0 0 1px #3a2525}
+  body.dark .cell.out.o-jp .n{color:#8a5757}
+  body.dark .cell.out.o-kr{background:#282315;box-shadow:inset 0 0 0 1px #3a3420}
+  body.dark .cell.out.o-kr .n{color:#8a7842}
+  body.dark .cell.out.o-both{background:linear-gradient(135deg,#2a1b1b 55%,#282315 45%);box-shadow:inset 0 0 0 1px #3a2525}
+  body.dark .cell.out.o-both .n{color:#9a6f4d}
+  body.dark .cell.out.o-vac{background:#2c1b1b;box-shadow:inset 0 0 0 1px #3d2525}
+  body.dark .cell.out.o-vac .n{color:#8a5353}
+  body.dark .cell.vac .n{color:#ff5c5c}
+  body.dark .list li.vacrow{background:#3a1c1c}
+  body.dark .divider{background:#23262e}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title">한일 달력 <small>한국 거주 · 일본 휴일 기준</small></div>
+    <div class="topright">
+      <div class="clock" id="clock"></div>
+      <button class="modebtn" id="modebtn" aria-label="모드 전환">🌙</button>
+    </div>
+  </div>
+  <div class="bar">
+    <div class="yearseg" id="yearseg">
+      <button data-y="2026">2026</button><button data-y="2027">2027</button><button data-y="2028">2028</button><button data-y="2029">2029</button>
+    </div>
+    <div class="nav">
+      <button id="prev" aria-label="이전 달">‹</button>
+      <div class="mlabel" id="mlabel"></div>
+      <button id="next" aria-label="다음 달">›</button>
+      <div class="mpicker" id="mpicker" hidden></div>
+    </div>
+    <button class="todaybtn" id="today">오늘로 이동</button>
+  </div>
+  <div class="legend">
+    <span><i class="chip jp"></i>일본 공휴일 · 휴무</span>
+    <span><i class="chip vac"></i>내 휴가</span>
+    <span><i class="chip kr"></i>한국 공휴일 · 참고</span>
+    <span><i class="chip both"></i>양국 공휴일</span>
+    <span><i class="chip td"></i>오늘</span>
+  </div>
+  <div class="cal">
+    <div class="dow"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div>
+    <div class="grid" id="grid"></div>
+  </div>
+  <div class="ytotal" id="ytotal"></div>
+  <div class="summary" id="summary"></div>
+  <ul class="list" id="list"></ul>
+  <p class="note" id="note"></p>
+</div>
+<script>
+const JP = {
+  '2026-10-12':'スポーツの日 · 스포츠의 날','2026-11-03':'文化の日 · 문화의 날','2026-11-23':'勤労感謝の日 · 근로감사의 날',
+  '2027-01-01':'元日 · 신정','2027-01-11':'成人の日 · 성인의 날','2027-02-11':'建国記念の日 · 건국기념일',
+  '2027-02-23':'天皇誕生日 · 천황탄생일','2027-03-21':'春分の日 · 춘분','2027-03-22':'振替休日 · 대체휴일',
+  '2027-04-29':'昭和の日 · 쇼와의 날','2027-05-03':'憲法記念日 · 헌법기념일','2027-05-04':'みどりの日 · 녹색의 날',
+  '2027-05-05':'こどもの日 · 어린이날','2027-07-19':'海の日 · 바다의 날','2027-08-11':'山の日 · 산의 날',
+  '2027-09-20':'敬老の日 · 경로의 날','2027-09-23':'秋分の日 · 추분','2027-10-11':'スポーツの日 · 스포츠의 날',
+  '2027-11-03':'文化の日 · 문화의 날','2027-11-23':'勤労感謝の日 · 근로감사의 날',
+  '2028-01-01':'元日 · 신정','2028-01-10':'成人の日 · 성인의 날','2028-02-11':'建国記念の日 · 건국기념일',
+  '2028-02-23':'天皇誕生日 · 천황탄생일','2028-03-20':'春分の日 · 춘분','2028-04-29':'昭和の日 · 쇼와의 날',
+  '2028-05-03':'憲法記念日 · 헌법기념일','2028-05-04':'みどりの日 · 녹색의 날','2028-05-05':'こどもの日 · 어린이날',
+  '2028-07-17':'海の日 · 바다의 날','2028-08-11':'山の日 · 산의 날','2028-09-18':'敬老の日 · 경로의 날',
+  '2028-09-22':'秋分の日 · 추분','2028-10-09':'スポーツの日 · 스포츠의 날','2028-11-03':'文化の日 · 문화의 날',
+  '2028-11-23':'勤労感謝の日 · 근로감사의 날',
+  '2029-01-01':'元日 · 신정','2029-01-08':'成人の日 · 성인의 날','2029-02-11':'建国記念の日 · 건국기념일',
+  '2029-02-12':'振替休日 · 대체휴일','2029-02-23':'天皇誕生日 · 천황탄생일','2029-03-20':'春分の日 · 춘분',
+  '2029-04-29':'昭和の日 · 쇼와의 날','2029-04-30':'振替休日 · 대체휴일','2029-05-03':'憲法記念日 · 헌법기념일',
+  '2029-05-04':'みどりの日 · 녹색의 날','2029-05-05':'こどもの日 · 어린이날','2029-07-16':'海の日 · 바다의 날',
+  '2029-08-11':'山の日 · 산의 날','2029-09-17':'敬老の日 · 경로의 날','2029-09-23':'秋分の日 · 추분',
+  '2029-09-24':'振替休日 · 대체휴일','2029-10-08':'スポーツの日 · 스포츠의 날','2029-11-03':'文化の日 · 문화의 날',
+  '2029-11-23':'勤労感謝の日 · 근로감사의 날'
+};
+const KR = {
+  '2026-10-03':'개천절','2026-10-05':'대체공휴일(개천절)','2026-10-09':'한글날','2026-12-25':'크리스마스',
+  '2027-01-01':'신정','2027-02-06':'설날 연휴','2027-02-07':'설날','2027-02-08':'설날 연휴',
+  '2027-02-09':'대체공휴일(설날)','2027-03-01':'삼일절','2027-05-05':'어린이날','2027-05-13':'부처님오신날',
+  '2027-06-06':'현충일','2027-07-17':'제헌절','2027-08-15':'광복절','2027-08-16':'대체공휴일(광복절)',
+  '2027-10-03':'개천절','2027-10-04':'대체공휴일(개천절)','2027-10-09':'한글날','2027-10-11':'대체공휴일(한글날)',
+  '2027-12-25':'크리스마스','2027-12-27':'대체공휴일(크리스마스)',
+  '2028-01-01':'신정','2028-01-26':'설날 연휴','2028-01-27':'설날','2028-01-28':'설날 연휴',
+  '2028-03-01':'삼일절','2028-05-02':'부처님오신날','2028-05-05':'어린이날','2028-06-06':'현충일',
+  '2028-07-17':'제헌절','2028-08-15':'광복절','2028-10-02':'추석 연휴','2028-10-03':'추석·개천절',
+  '2028-10-04':'추석 연휴','2028-10-05':'대체공휴일(개천절)','2028-10-09':'한글날','2028-12-25':'크리스마스',
+  '2029-01-01':'신정','2029-02-12':'설날 연휴','2029-02-13':'설날','2029-02-14':'설날 연휴',
+  '2029-03-01':'삼일절','2029-05-05':'어린이날','2029-05-07':'대체공휴일(어린이날)','2029-05-20':'부처님오신날',
+  '2029-05-21':'대체공휴일(부처님오신날)','2029-06-06':'현충일','2029-07-17':'제헌절','2029-08-15':'광복절',
+  '2029-09-21':'추석 연휴','2029-09-22':'추석','2029-09-23':'추석 연휴','2029-09-24':'대체공휴일(추석)',
+  '2029-10-03':'개천절','2029-10-09':'한글날','2029-12-25':'크리스마스'
+};
+const WD=['일','월','화','수','목','금','토'];
+let now=new Date();
+const Y0=2026,Y1=2029;
+const MIN_Y=2026,MIN_M=9; // 2026년 10월부터 시작
+const beforeStart=(y,m)=>y<MIN_Y||(y===MIN_Y&&m<MIN_M);
+let cy=(now.getFullYear()>=Y0&&now.getFullYear()<=Y1)?now.getFullYear():Y0;
+let cm=(cy===now.getFullYear())?now.getMonth():0;
+if(beforeStart(cy,cm)){cy=MIN_Y;cm=MIN_M;}
+let vac=new Set();
+const pad=n=>String(n).padStart(2,'0');
+const key=(y,m,d)=>`${y}-${pad(m+1)}-${pad(d)}`;
+const isBday=(m,d)=>m===7&&d===6;
+function outCell(dt){
+  const y=dt.getFullYear(),m=dt.getMonth(),d=dt.getDate(),wd=dt.getDay(),kk=key(y,m,d);
+  const isJP=!!JP[kk],isKR=!!KR[kk],isVac=vac.has(kk);
+  let cls='cell out';
+  if(isVac)cls+=' o-vac';else if(isJP&&isKR)cls+=' o-both';else if(isJP)cls+=' o-jp';else if(isKR)cls+=' o-kr';
+  if(wd===0)cls+=' sun';if(wd===6)cls+=' sat';
+  const b=document.createElement('div');b.className=cls;
+  b.innerHTML=`<span class="n">${d}</span>`;return b;
+}
+// 저장: Claude 아티팩트 안에서는 window.storage, 그 밖(브라우저·앱)에서는 localStorage
+const store={
+  async get(k){
+    try{if(window.storage){const r=await window.storage.get(k,false);return r?r.value:null;}}catch(e){}
+    try{return localStorage.getItem(k);}catch(e){return null;}
+  },
+  async set(k,v){
+    try{if(window.storage){await window.storage.set(k,v,false);return;}}catch(e){}
+    try{localStorage.setItem(k,v);}catch(e){}
+  }
+};
+async function saveVac(){await store.set('cal_vac2',JSON.stringify([...vac]));}
+async function saveTheme(dark){await store.set('cal_theme',dark?'dark':'light');}
+async function loadState(){
+  try{const v=await store.get('cal_vac2');if(v)vac=new Set(JSON.parse(v));}catch(e){}
+  try{const t=await store.get('cal_theme');if(t==='dark')document.body.classList.add('dark');}catch(e){}
+}
+function render(){
+  document.querySelectorAll('#yearseg button').forEach(b=>b.classList.toggle('on',+b.dataset.y===cy));
+  document.getElementById('mlabel').innerHTML=`${cy}년 ${cm+1}월 <span style="opacity:.4;font-size:.8em">▾</span>`;
+  const grid=document.getElementById('grid');grid.innerHTML='';
+  const first=new Date(cy,cm,1).getDay(), days=new Date(cy,cm+1,0).getDate();
+  const prevLast=new Date(cy,cm,0).getDate();
+  for(let i=first-1;i>=0;i--){grid.appendChild(outCell(new Date(cy,cm-1,prevLast-i)));}
+  const tKey=key(now.getFullYear(),now.getMonth(),now.getDate());
+  for(let d=1;d<=days;d++){
+    const k=key(cy,cm,d),dow=new Date(cy,cm,d).getDay();
+    const isJP=!!JP[k],isKR=!!KR[k],isVac=vac.has(k),bday=isBday(cm,d);
+    const cell=document.createElement('div');let cls='cell';
+    if(isVac)cls+=' vac';else if(isJP&&isKR)cls+=' both';else if(isJP)cls+=' jp';else if(isKR)cls+=' kr';
+    if(dow===0)cls+=' sun';if(dow===6)cls+=' sat';if(k===tKey)cls+=' today';
+    cell.className=cls;
+    let html=`<span class="n">${d}</span>`;
+    if(isVac)html+=`<span class="hname vac">휴가</span>`;
+    if(isJP&&!isVac)html+=`<span class="hname jp">${JP[k].split(' · ')[1]||JP[k]}</span>`;
+    if(isKR)html+=`<span class="hname kr">${KR[k]}</span>`;
+    if(bday)html+=`<span class="bday">🎂 생일</span>`;
+    if(k===tKey&&!bday)html+=`<span class="todaydot"></span>`;
+    cell.innerHTML=html;
+    cell.addEventListener('click',()=>{if(vac.has(k))vac.delete(k);else vac.add(k);saveVac();render();});
+    grid.appendChild(cell);
+  }
+  const filled=first+days, trail=(7-(filled%7))%7;
+  for(let i=1;i<=trail;i++){grid.appendChild(outCell(new Date(cy,cm+1,i)));}
+  // 휴가(순번) → 일본 공휴일 → 한국 공휴일 → 생일
+  const vacRows=[],jpRows=[],krRows=[],bdayRows=[];
+  for(let d=1;d<=days;d++){
+    const k=key(cy,cm,d),dow=WD[new Date(cy,cm,d).getDay()];
+    if(vac.has(k))vacRows.push({d,dow});
+    if(JP[k])jpRows.push({d,dow,type:'jp',nm:JP[k]});
+    if(KR[k])krRows.push({d,dow,type:'kr',nm:KR[k]});
+    if(isBday(cm,d))bdayRows.push({d,dow,type:'bday',nm:'내 생일 🎂'});
+  }
+  const mp=`${cy}-${pad(cm+1)}`;
+  const offJP=Object.keys(JP).filter(k=>k.startsWith(mp)).length;
+  const yJP=Object.keys(JP).filter(k=>k.startsWith(cy+'-')).length;
+  const yVac=[...vac].filter(k=>k.startsWith(cy+'-')).length;
+  document.getElementById('ytotal').innerHTML=
+    `<span class="yr">${cy}년 ${cy===MIN_Y?'10~12월':'전체'}</span> 휴무 <b class="jp">${yJP}일</b> · 휴가 <b class="vac">${yVac}일</b>`;
+  document.getElementById('summary').innerHTML=
+    `이번 달 휴무 <b class="jp">${offJP}일</b> <span style="color:var(--muted);font-weight:600">(일본 공휴일)</span>`+
+    (vacRows.length?` · 휴가 <b class="vac">${vacRows.length}일</b>`:'');
+  const list=document.getElementById('list');
+  const hrow=it=>`<li><span class="seqgap"></span>
+      <span class="date">${it.d}일<span class="wd">${it.dow}</span></span>
+      <span class="tag ${it.type}">${it.type==='jp'?'휴무·일본':it.type==='kr'?'참고·한국':'생일'}</span>
+      <span class="nm">${it.nm}</span></li>`;
+  let html='';
+  if(vacRows.length){html+=`<li class="divider">내 휴가</li>`;
+    vacRows.forEach((it,i)=>{html+=`
+      <li class="vacrow"><span class="seq">${i+1}</span>
+        <span class="date">${it.d}일<span class="wd">${it.dow}</span></span>
+        <span class="tag vac">휴가</span><span class="nm">내 휴가</span></li>`;});}
+  if(jpRows.length){html+=`<li class="divider">일본 공휴일 · 휴무</li>`;jpRows.forEach(it=>html+=hrow(it));}
+  if(krRows.length){html+=`<li class="divider">한국 공휴일 · 참고</li>`;krRows.forEach(it=>html+=hrow(it));}
+  if(bdayRows.length){bdayRows.forEach(it=>html+=hrow(it));}
+  list.innerHTML=html||`<li class="empty">이번 달은 표시된 날이 없습니다.</li>`;
+  const note=document.getElementById('note');
+  note.innerHTML='';
+}
+function shift(delta){cm+=delta;
+  if(cm<0){cm=11;cy--;}if(cm>11){cm=0;cy++;}
+  if(beforeStart(cy,cm)){cy=MIN_Y;cm=MIN_M;}if(cy>Y1){cy=Y1;cm=11;}render();}
+document.getElementById('prev').onclick=()=>shift(-1);
+document.getElementById('next').onclick=()=>shift(1);
+const mlabel=document.getElementById('mlabel'), mpicker=document.getElementById('mpicker');
+mlabel.onclick=(e)=>{
+  e.stopPropagation();
+  if(!mpicker.hidden){mpicker.hidden=true;return;}
+  mpicker.innerHTML='';
+  for(let m=0;m<12;m++){
+    const btn=document.createElement('button');btn.textContent=(m+1)+'월';
+    if(m===cm)btn.classList.add('on');
+    if(beforeStart(cy,m)){btn.disabled=true;btn.style.opacity='.3';btn.style.cursor='default';}
+    btn.onclick=(ev)=>{ev.stopPropagation();cm=m;mpicker.hidden=true;render();};
+    mpicker.appendChild(btn);
+  }
+  mpicker.hidden=false;
+};
+document.addEventListener('click',()=>{mpicker.hidden=true;});
+document.getElementById('today').onclick=()=>{
+  const y=now.getFullYear();
+  if(y>=Y0&&y<=Y1){cy=y;cm=now.getMonth();render();}};
+document.querySelectorAll('#yearseg button').forEach(b=>b.onclick=()=>{cy=+b.dataset.y;if(beforeStart(cy,cm))cm=MIN_M;render();});
+const clock=document.getElementById('clock');
+function tick(){
+  const d=new Date();
+  const t=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(d);
+  const dt=new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'2-digit',day:'2-digit',weekday:'short'}).format(d);
+  clock.innerHTML=`<span class="cd">${dt}</span>${t}`;
+  // 앱 창을 켜 둔 채 날짜가 바뀌면 '오늘' 표시를 다시 그림
+  if(d.toDateString()!==now.toDateString()){now=d;render();}
+}
+tick();setInterval(tick,1000);
+const modebtn=document.getElementById('modebtn');
+function updMode(){modebtn.textContent=document.body.classList.contains('dark')?'☀️':'🌙';}
+modebtn.onclick=()=>{document.body.classList.toggle('dark');updMode();saveTheme(document.body.classList.contains('dark'));};
+(async()=>{await loadState();updMode();render();})();
+// 인터넷 주소(https)로 열었을 때 앱 설치·오프라인 실행을 위해 등록
+if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+</script>
+</body>
+</html>
