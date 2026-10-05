@@ -94,6 +94,22 @@
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
   .cell .hname.jp{color:var(--jp)}.cell .hname.kr{color:var(--kr-ink)}.cell .hname.vac{color:var(--vac);font-weight:800}
   .cell .bday{font-size:.66rem;font-weight:800;color:#c85fb0;line-height:1.2}
+  /* 생일: 칸은 은은하게 빛나고, 글자는 무지개빛이 흐르게 */
+  .cell.bdaycell{background:linear-gradient(135deg,#ffe3f3,#f1e6ff 60%,#fff2dc);
+    animation:bdayGlow 2.6s ease-in-out infinite}
+  .cell.bdaycell .n{color:#c2409a}
+  .cell .bday .t{background:linear-gradient(90deg,#ff4fa8,#ff9f43,#ffd43b,#a66bff,#ff4fa8);background-size:300% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 2.8s linear infinite;
+    filter:drop-shadow(0 0 3px rgba(255,79,168,.55))}
+  .cell .bday .e{display:inline-block;animation:bounce 1.6s ease-in-out infinite}
+  .list .tag.bday{background:linear-gradient(90deg,#ffd6ee,#eadcff,#ffe9c7,#ffd6ee);background-size:300% 100%;
+    animation:shimmer 3.5s linear infinite}
+  @keyframes shimmer{to{background-position:300% 0}}
+  @keyframes bdayGlow{
+    0%,100%{box-shadow:inset 0 0 0 1px #f3b6dc,0 0 0 rgba(255,79,168,0)}
+    50%{box-shadow:inset 0 0 0 2px #ff7cc3,0 0 14px rgba(255,79,168,.55)}}
+  @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px) rotate(-6deg)}}
+  @media(prefers-reduced-motion:reduce){.cell.bdaycell,.cell .bday .t,.cell .bday .e,.list .tag.bday{animation:none}}
   .todaydot{position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--today)}
   .ytotal{margin:16px 2px 4px;font-size:.95rem;font-weight:800;background:var(--surface);
     border:1px solid var(--line);border-radius:12px;padding:11px 15px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
@@ -148,6 +164,8 @@
   body.dark .cell.vac .n{color:#ff5c5c}
   body.dark .list li.vacrow{background:#3a1c1c}
   body.dark .divider{background:#23262e}
+  body.dark .cell.bdaycell{background:linear-gradient(135deg,#3d1f33,#2e2442 60%,#3a2e1c)}
+  body.dark .cell.bdaycell .n{color:#ff8fd0}
 </style>
 </head>
 <body>
@@ -278,13 +296,13 @@ function render(){
     const isJP=!!JP[k],isKR=!!KR[k],isVac=vac.has(k),bday=isBday(cm,d);
     const cell=document.createElement('div');let cls='cell';
     if(isVac)cls+=' vac';else if(isJP&&isKR)cls+=' both';else if(isJP)cls+=' jp';else if(isKR)cls+=' kr';
-    if(dow===0)cls+=' sun';if(dow===6)cls+=' sat';if(k===tKey)cls+=' today';
+    if(dow===0)cls+=' sun';if(dow===6)cls+=' sat';if(k===tKey)cls+=' today';if(bday)cls+=' bdaycell';
     cell.className=cls;
     let html=`<span class="n">${d}</span>`;
     if(isVac)html+=`<span class="hname vac">휴가</span>`;
     if(isJP&&!isVac)html+=`<span class="hname jp">${JP[k].split(' · ')[1]||JP[k]}</span>`;
     if(isKR)html+=`<span class="hname kr">${KR[k]}</span>`;
-    if(bday)html+=`<span class="bday">🎂 생일</span>`;
+    if(bday)html+=`<span class="bday"><span class="e">🎂</span> <span class="t">생일</span></span>`;
     if(k===tKey&&!bday)html+=`<span class="todaydot"></span>`;
     cell.innerHTML=html;
     cell.addEventListener('click',()=>{if(vac.has(k))vac.delete(k);else vac.add(k);saveVac();render();});
