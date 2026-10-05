@@ -98,9 +98,13 @@
   .cell.bdaycell{background:linear-gradient(135deg,#ffe3f3,#f1e6ff 60%,#fff2dc);
     animation:bdayGlow 2.6s ease-in-out infinite}
   .cell.bdaycell .n{color:#c2409a}
-  .cell .bday .t{background:linear-gradient(90deg,#ff4fa8,#ff9f43,#ffd43b,#a66bff,#ff4fa8);background-size:300% 100%;
-    -webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 2.8s linear infinite;
-    filter:drop-shadow(0 0 3px rgba(255,79,168,.55))}
+  /* 글자는 진한 색으로 선명하게 두고, 그 위로 밝은 빛줄기만 지나가게 */
+  .cell .bday .t{font-size:.72rem;font-weight:900;
+    background:linear-gradient(100deg,#c2187a 0%,#c2187a 40%,#ff8ad0 50%,#c2187a 60%,#c2187a 100%);
+    background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:shine 2.4s linear infinite}
+  @keyframes shine{from{background-position:100% 0}to{background-position:-150% 0}}
+  body.dark .cell .bday .t{background-image:linear-gradient(100deg,#ff7cc8 0%,#ff7cc8 40%,#fff 50%,#ff7cc8 60%,#ff7cc8 100%)}
   .cell .bday .e{display:inline-block;animation:bounce 1.6s ease-in-out infinite}
   .list .tag.bday{background:linear-gradient(90deg,#ffd6ee,#eadcff,#ffe9c7,#ffd6ee);background-size:300% 100%;
     animation:shimmer 3.5s linear infinite}
