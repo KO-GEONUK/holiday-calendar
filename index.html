@@ -98,6 +98,10 @@
   .cell.bdaycell{background:linear-gradient(135deg,#ffe3f3,#f1e6ff 60%,#fff2dc);
     animation:bdayGlow 2.6s ease-in-out infinite}
   .cell.bdaycell .n{color:#c2409a}
+  .cell .bday{white-space:nowrap}
+  /* 휴가인 생일: 칸을 휴가색·생일색 반반으로, 숫자는 휴가색 */
+  .cell.vac.bdaycell{background:linear-gradient(135deg,var(--vac-soft) 50%,#ffe3f3 50%)}
+  .cell.vac.bdaycell .n{color:var(--vac)}
   /* 글자는 진한 색으로 선명하게 두고, 그 위로 밝은 빛줄기만 지나가게 */
   .cell .bday .t{font-size:.72rem;font-weight:900;
     background:linear-gradient(100deg,#c2187a 0%,#c2187a 40%,#ff8ad0 50%,#c2187a 60%,#c2187a 100%);
@@ -141,6 +145,10 @@
   @media(max-width:520px){
     .topbar{flex-wrap:wrap}.clock{font-size:1.25rem}.clock .cd{font-size:.85rem}
     .cell{min-height:60px;padding:5px 4px}.cell .hname{display:none}
+    /* 좁은 칸: 공휴일 이름은 숨기되 '휴가'는 보이게, 생일은 🎂 / 생일 두 줄로 */
+    .cell .hname.vac{display:block;white-space:nowrap}
+    .cell .bday{display:flex;flex-direction:column;align-items:flex-start;gap:1px}
+    .cell .bday .e{font-size:.8rem;line-height:1}
     .nav{margin-left:0;width:100%;justify-content:space-between}.nav .mlabel{flex:1}.todaybtn{margin-left:auto}
   }
   /* 다크 모드 */
@@ -169,6 +177,7 @@
   body.dark .list li.vacrow{background:#3a1c1c}
   body.dark .divider{background:#23262e}
   body.dark .cell.bdaycell{background:linear-gradient(135deg,#3d1f33,#2e2442 60%,#3a2e1c)}
+  body.dark .cell.vac.bdaycell{background:linear-gradient(135deg,var(--vac-soft) 50%,#3d1f33 50%)}
   body.dark .cell.bdaycell .n{color:#ff8fd0}
 </style>
 </head>
