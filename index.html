@@ -39,7 +39,8 @@
   .weather{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;min-height:32px}
   .weather .wx{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);
     border-radius:999px;padding:4px 12px 4px 10px;font-size:.84rem;font-weight:700;color:var(--ink);white-space:nowrap}
-  .weather .wx .ic{font-size:1.1rem;line-height:1}
+  .weather .wx .ic,.weather .wx .aq .e{display:inline-flex;align-items:center;justify-content:center;line-height:1;transform:translateY(-.1em)}
+  .weather .wx .ic{font-size:1.1rem;height:1.1rem}
   .weather .wx .pl{color:var(--muted);font-weight:600}
   .weather .wx .tp{font-variant-numeric:tabular-nums}
   /* PC: 달력 양옆의 큰 이전/다음 버튼 */
@@ -554,7 +555,7 @@ function drawTop(){
     let s=`<span class="wx" title="${w.name} · ${wxText(w.code)} · 최고 ${w.max}° / 최저 ${w.min}°">`+
       `<span class="ic">${wxIcon(w.code,w.day)}</span><span class="pl">${w.name}</span><span class="tp">${w.temp}°</span>`;
     if(w.aq){const g=aqGrade(w.aq.pm10,w.aq.pm25);
-      s+=`<span class="sep"></span><span class="aq ${g.c}" title="미세먼지 ${Math.round(w.aq.pm10)} · 초미세먼지 ${Math.round(w.aq.pm25)} ㎍/㎥">${g.e} ${g.t}</span>`;}
+      s+=`<span class="sep"></span><span class="aq ${g.c}" title="미세먼지 ${Math.round(w.aq.pm10)} · 초미세먼지 ${Math.round(w.aq.pm25)} ㎍/㎥"><span class="e">${g.e}</span> ${g.t}</span>`;}
     return s+'</span>';}).join('');
   if(fxRate){const diff=fxRate.prev!=null?Math.round((fxRate.v-fxRate.prev)*10)/10:0;
     html+=`<span class="wx" title="${fxRate.date} 기준 · 1엔 = ${(fxRate.v/100).toFixed(2)}원"><span class="ic">💴</span>`+
