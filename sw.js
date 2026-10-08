@@ -1,5 +1,5 @@
 // 오프라인에서도 열리도록 파일을 저장해 두고, 온라인이면 최신 파일로 갱신한다
-const CACHE = 'holiday-calendar-v1';
+const CACHE = 'holiday-calendar-v3';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-180.png'];
 
 self.addEventListener('install', (e) => {
