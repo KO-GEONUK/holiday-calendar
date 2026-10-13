@@ -634,15 +634,21 @@ function openMemo(k){
   memoKey=k;const [y,m,d]=k.split('-').map(Number);
   document.getElementById('memoTitle').textContent=`📝 ${m}월 ${d}일 (${WD[new Date(y,m-1,d).getDay()]}) 메모`;
   memoInput.value=memo[k]||'';document.getElementById('memoDel').style.visibility=memo[k]?'visible':'hidden';
-  memoModal.hidden=false;setTimeout(()=>memoInput.focus(),30);}
-function closeMemo(){memoModal.hidden=true;memoKey=null;}
+  memoModal.hidden=false;setTimeout(()=>memoInput.focus(),30);
+  // 폰의 뒤로가기가 앱을 끄지 않고 메모 창만 닫도록, 열 때 기록을 한 칸 쌓아 둠
+  try{history.pushState({memo:1},'');memoPushed=true;}catch(e){}}
+let memoPushed=false;
+function closeMemo(fromBack){
+  memoModal.hidden=true;memoKey=null;
+  if(memoPushed){memoPushed=false;if(!fromBack)history.back();}}
+window.addEventListener('popstate',()=>{if(!memoModal.hidden)closeMemo(true);});
 function commitMemo(text){
   if(!memoKey)return;const v=text.trim();
   if(v)memo[memoKey]=v;else delete memo[memoKey];
   saveMemo();closeMemo();render();}
 document.getElementById('memoSave').onclick=()=>commitMemo(memoInput.value);
 document.getElementById('memoDel').onclick=()=>commitMemo('');
-document.getElementById('memoCancel').onclick=closeMemo;
+document.getElementById('memoCancel').onclick=()=>closeMemo();
 memoModal.addEventListener('click',e=>{if(e.target===memoModal)closeMemo();});
 memoInput.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing)commitMemo(memoInput.value);else if(e.key==='Escape')closeMemo();});
 // ── 명절 효과: 오늘이 명절·기념일이면 이모지가 20초 동안 내리고, 문구를 누르면 다시 재생
