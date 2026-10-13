@@ -183,6 +183,10 @@
   .list .tag.pay{background:#dff5ea;color:#0f8a5f}.list .tag.memo{background:var(--bg);color:var(--ink)}
   body.dark .cell .pay{color:#4cd49a}body.dark .list .tag.pay{background:#163b2b;color:#4cd49a}
   /* 날씨 줄: 미세먼지 · 환율 */
+  .weather{cursor:pointer;align-items:center}
+  .weather .wxtime{font-size:.72rem;color:var(--muted);font-weight:600;margin-left:2px}
+  .weather.loading .wxtime{animation:wxblink 1s ease-in-out infinite}
+  @keyframes wxblink{50%{opacity:.3}}
   .weather .wx .sep{width:1px;height:12px;background:var(--line)}
   .weather .wx .aq.good{color:#1a8fd6}.weather .wx .aq.ok{color:#0f8a5f}.weather .wx .aq.bad{color:#e07a0c}.weather .wx .aq.worse{color:#e03b3b}
   .weather .wx .up{color:#e03b3b;font-size:.72rem}.weather .wx .down{color:#1a6fd6;font-size:.72rem}
@@ -526,7 +530,7 @@ function tick(){
   const dt=new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'2-digit',day:'2-digit',weekday:'short'}).format(d);
   clock.innerHTML=`<span class="cd">${dt}</span>${t}`;
   // 앱 창을 켜 둔 채 날짜가 바뀌면 '오늘' 표시를 다시 그림
-  if(d.toDateString()!==now.toDateString()){now=d;render();}
+  if(d.toDateString()!==now.toDateString()){now=d;render();if(typeof loadWx==='function')loadWx(true);}
 }
 tick();setInterval(tick,1000);
 // ── 날씨 · 미세먼지 · 칸 안의 예보 (Open-Meteo, 키 불필요). 30분마다 갱신, 실패하면 마지막 값
@@ -561,15 +565,24 @@ function drawTop(){
     html+=`<span class="wx" title="${fxRate.date} 기준 · 1엔 = ${(fxRate.v/100).toFixed(2)}원"><span class="ic">💴</span>`+
       `<span class="pl">100엔</span><span class="tp">${Math.round(fxRate.v).toLocaleString()}원</span>`+
       (diff>0?`<span class="up">▲${diff}</span>`:diff<0?`<span class="down">▼${-diff}</span>`:'')+`</span>`;}
+  if(wxData&&wxData.at){const t=new Date(wxData.at);
+    html+=`<span class="wxtime" id="wxtime">${pad(t.getHours())}:${pad(t.getMinutes())} 기준</span>`;}
   el.innerHTML=html;}
 function applyForecast(){
   fc={};const p=wxData&&wxData.places.find(x=>x.id===FC_ID);
-  if(p&&p.daily)p.daily.forEach(d=>fc[d.date]=d);render();}
+  const tk=key(now.getFullYear(),now.getMonth(),now.getDate());
+  if(p&&p.daily)p.daily.forEach(d=>{if(d.date>=tk)fc[d.date]=d;});
+  if(fc[tk]&&p)fc[tk]={...fc[tk],code:p.code};
+  render();}
 function cached(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
-async function getJSON(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json();}
-async function loadWx(){
+async function getJSON(u){const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error(r.status);return r.json();}
+const WX_TTL=15*60*1000;let wxBusy=false,wxRetry=null;
+async function loadWx(force){
   const c=cached('cal_wx2');
-  if(c&&Date.now()-c.at<30*60*1000){wxData=c;drawTop();applyForecast();return;}
+  if(!force&&c&&Date.now()-c.at<WX_TTL){wxData=c;drawTop();applyForecast();return;}
+  if(wxBusy)return;wxBusy=true;
+  if(c&&!wxData){wxData=c;drawTop();applyForecast();} // 받는 동안은 이전 값
+  document.getElementById('weather').classList.add('loading');
   try{
     const places=await Promise.all(PLACES.map(async p=>{
       const j=await getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${p.lat}&longitude=${p.lon}`+
@@ -584,13 +597,14 @@ async function loadWx(){
         max:daily[0].max,min:daily[0].min,daily,aq};}));
     wxData={at:Date.now(),places};
     try{localStorage.setItem('cal_wx2',JSON.stringify(wxData));}catch(e){}
-  }catch(e){if(c)wxData=c;}
+  }catch(e){if(c)wxData=c;clearTimeout(wxRetry);wxRetry=setTimeout(()=>loadWx(true),60*1000);}
+  wxBusy=false;document.getElementById('weather').classList.remove('loading');
   drawTop();applyForecast();
 }
 // ── 원·엔 환율 (open.er-api.com, 하루 1번 갱신). 전날 값과 비교해 ▲▼ 표시
-async function loadFx(){
+async function loadFx(force){
   const c=cached('cal_fx');
-  if(c&&Date.now()-c.at<3*60*60*1000){fxRate=c;drawTop();return;}
+  if(!force&&c&&Date.now()-c.at<3*60*60*1000){fxRate=c;drawTop();return;}
   try{
     const j=await getJSON('https://open.er-api.com/v6/latest/JPY');
     const v=j.rates.KRW*100,date=new Date(j.time_last_update_unix*1000).toISOString().slice(0,10);
@@ -602,8 +616,16 @@ async function loadFx(){
   }catch(e){if(c)fxRate=c;}
   drawTop();
 }
-loadWx();setInterval(loadWx,30*60*1000);
-loadFx();setInterval(loadFx,3*60*60*1000);
+loadWx();setInterval(()=>loadWx(),5*60*1000);
+loadFx();setInterval(()=>loadFx(),30*60*1000);
+// 앱을 다시 열거나(백그라운드에서 돌아올 때) 인터넷이 다시 연결되면 오래된 값이면 바로 새로 받기
+function refreshIfStale(){loadWx();loadFx();}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refreshIfStale();});
+window.addEventListener('pageshow',e=>{if(e.persisted)refreshIfStale();});
+window.addEventListener('online',()=>loadWx(true));
+window.addEventListener('focus',refreshIfStale);
+// 날씨 줄을 누르면 바로 새로고침 (버튼은 따로 두지 않음)
+document.getElementById('weather').addEventListener('click',()=>{loadWx(true);loadFx(true);});
 // ── 한 줄 메모 (길게 누르기 · 우클릭)
 const memoModal=document.getElementById('memoModal'),memoInput=document.getElementById('memoInput');
 let memoKey=null;
