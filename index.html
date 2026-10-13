@@ -183,7 +183,11 @@
   .list .tag.pay{background:#dff5ea;color:#0f8a5f}.list .tag.memo{background:var(--bg);color:var(--ink)}
   body.dark .cell .pay{color:#4cd49a}body.dark .list .tag.pay{background:#163b2b;color:#4cd49a}
   /* 날씨 줄: 미세먼지 · 환율 */
-  .weather{cursor:pointer;align-items:center}
+  /* 폰에서 누를 때 생기는 파란 칸 없애고, 대신 살짝 흐려지는 정도로만 */
+  html{-webkit-tap-highlight-color:transparent}
+  .weather{cursor:pointer;align-items:center;transition:opacity .15s}
+  .weather:active{opacity:.55}
+  button:active{opacity:.7}
   .weather .wxtime{font-size:.72rem;color:var(--muted);font-weight:600;margin-left:2px}
   .weather.loading .wxtime{animation:wxblink 1s ease-in-out infinite}
   @keyframes wxblink{50%{opacity:.3}}
@@ -576,7 +580,8 @@ function applyForecast(){
   render();}
 function cached(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
 async function getJSON(u){const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error(r.status);return r.json();}
-const WX_TTL=15*60*1000;let wxBusy=false,wxRetry=null;
+// 앱을 열거나 돌아올 때마다 새로 받음 (1분 안에 받은 것만 재사용 — 빠르게 앱을 오갈 때 중복 요청 방지)
+const WX_TTL=60*1000;let wxBusy=false,wxRetry=null;
 async function loadWx(force){
   const c=cached('cal_wx2');
   if(!force&&c&&Date.now()-c.at<WX_TTL){wxData=c;drawTop();applyForecast();return;}
